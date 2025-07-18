@@ -1,124 +1,87 @@
 <?php
-/* print_r($_POST['input']);die; */
-$prompt = $_POST['input'];
-if(!empty($prompt)){
-    checkModel($prompt);
-}else{
-    echo "Input is required";
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['error' => 'Method not allowed']);
+    exit;
 }
 
+$input = json_decode(file_get_contents('php://input'), true);
+$prompt = $input['prompt'];
 
+if (!empty($prompt) && strlen(trim($prompt)) > 0) {
+    $result = checkModel($prompt);
+    if (!$result) {
+        echo json_encode(['error' => 'Model check failed']);
+    }
+} else {
+    echo json_encode(['error' => 'Input is required']);
+}
+
+function callOllamaAPI($url, $postData)
+{
+    $headers = array(
+        "Content-Type: application/json"
+    );
+
+    $postFields = json_encode($postData);
+    $curl = curl_init();
+    
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_POST, 1);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $postFields);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 120);
+
+    $response = curl_exec($curl);
+
+    if (curl_errno($curl)) {
+        curl_close($curl);
+        return false;
+    }
+
+    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($http_code == 200) {
+        return $response;
+    } else {
+        return false;
+    }
+}
 
 function checkModel($prompt)
 {
     $url = "http://localhost:11434/api/show";
-    $headers = array(
-        "X-Custom-Header: header-value",
-        "Content-Type: application/json"
-    );
-    $postData = array(
-        'model' => 'llama3.2:1b',
-    );
+    $postData = array('model' => 'llama3.2:1b');
+    $response = callOllamaAPI($url, $postData);
 
-    $postFields = json_encode($postData);
-    $curl = curl_init();
-    try {
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $postFields);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($curl, CURLOPT_HEADER, true);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 30); // Timeout after 30 seconds
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
-        $response = curl_exec($curl);
-        /* echo "<pre>";
-        print_r($response);
-        echo "</pre>"; */
-
-        if (curl_errno($curl)) {
-            echo curl_error($curl);
-            die();
-        }
-
-        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        /* echo "<pre>";
-        print_r($http_code);
-        echo "</pre>"; */
-
-        if ($http_code == intval(200)) {
-            loadModel($prompt);
-        } else {
-            echo "Resource introuvable : " . $http_code;
-        }
-    } catch (\Throwable $th) {
-        throw $th;
-    } finally {
-        curl_close($curl);
+    if ($response) {
+        return loadModel($prompt);
     }
+    return false;
 }
 
 function loadModel($prompt)
-{  /*  echo "loadmodel"; */
+{
     $url = "http://localhost:11434/api/generate";
-    $headers = array(
-        "X-Custom-Header: header-value",
-        "Content-Type: application/json"
-    );
     $postData = array(
         'model' => 'llama3.2:1b',
         "prompt" => $prompt,
-        'stream' => false  // Important: set to false for single response
+        'stream' => false
     );
+    $response = callOllamaAPI($url, $postData);
 
-    $postFields = json_encode($postData);
-    $curl = curl_init();
-    try {
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // For localhost
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $postFields);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($curl, CURLOPT_HEADER, false); // Don't include headers in response
-        curl_setopt($curl, CURLOPT_TIMEOUT, 120); // Timeout after 120 seconds
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
-        $response = curl_exec($curl);
-        /* echo "<pre>";
-        print_r($response);
-        echo "</pre>"; */
+    if ($response) {
         $data = json_decode($response, true);
-        /* echo "<pre>";
-        print_r($data['response']);
-        echo "</pre>"; */
-
-        if (curl_errno($curl)) {
-            echo curl_error($curl);
-            die();
+        if (isset($data['response'])) {
+            echo json_encode(['response' => $data['response']]);
+            return true;
         }
-
-        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        /* echo "<pre>";
-        print_r($http_code);
-        echo "</pre>";
- */
-        if ($http_code == intval(200)) {
-            if (isset($data['response'])) {
-                echo "<div style='background: #e8f5e8; padding: 15px; border-radius: 5px;'>";
-                echo "<h3>AI Response:</h3>";
-                echo nl2br(htmlspecialchars($data['response']));
-                /* echo "<p><small>Model: " . $result['model'] . " | Duration: " . number_format($result['total_duration'] / 1000000000, 2) . "s</small></p>"; */
-                echo "</div>";
-            }
-        } else {
-            echo "Resource introuvable : " . $http_code;
-        }
-    } catch (\Throwable $th) {
-        throw $th;
-    } finally {
-        curl_close($curl);
     }
+    echo json_encode(['error' => 'Failed to generate response']);
+    return false;
 }
+?>
