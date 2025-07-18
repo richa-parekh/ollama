@@ -12,7 +12,7 @@
     </header>
 
     <main>
-      <aside id="banner"></aside>
+      <div id="banner"></div>
       <form method="post" class="form-container">
         <div class="form-filed">
           <textarea
@@ -26,24 +26,27 @@
             type="button"
             value="Generate output"
             class="button"
+            id="submitBtn"
             onclick="callFunction()"
           />
         </div>
+        <div id="output"></div>
       </form>
-      <div id="output"></div>
+      
     </main>
 
     <script>
-        function displayResponse(data) {
+      function displayResponse(data) {
         document.getElementById("output").innerHTML = data.response || data.error || "No response";
       }
+
       function callFunction() {
         var userInput = document.getElementById("input").value;
-
+        
         if (userInput && userInput.trim().length > 0) {
           document.getElementById("submitBtn").disabled = true;
           document.getElementById("submitBtn").value = "Processing...";
-
+          
           fetch("api.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -66,6 +69,7 @@
         } else {
           document.getElementById("banner").textContent = "Please enter Input";
         }
+      }
     </script>
   </body>
 </html>
