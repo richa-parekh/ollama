@@ -24,7 +24,7 @@
         <div class="form-field">
           <input
             type="button"
-            value="Generate output"
+            value="Request"
             class="button"
             id="submitBtn"
             onclick="callFunction()"
@@ -42,10 +42,12 @@
 
       function callFunction() {
         var userInput = document.getElementById("input").value;
-        
+        var alert = document.getElementById("banner");
+        var btn = document.getElementById("submitBtn");
+
         if (userInput && userInput.trim().length > 0) {
-          document.getElementById("submitBtn").disabled = true;
-          document.getElementById("submitBtn").value = "Processing...";
+          btn.disabled = true;
+          btn.value = "Processing...";
           
           fetch("api.php", {
             method: "POST",
@@ -58,16 +60,17 @@
           })
           .then((data) => {
             displayResponse(data);
-            document.getElementById("submitBtn").disabled = false;
-            document.getElementById("submitBtn").value = "Generate output";
+            btn.disabled = false;
+            btn.value = "Request";
           })
           .catch((error) => {
-            document.getElementById("banner").textContent = "Error: " + error.message;
-            document.getElementById("submitBtn").disabled = false;
-            document.getElementById("submitBtn").value = "Generate output";
+            alert.textContent = "Error: " + error.message;
+            btn.disabled = false;
+            btn.value = "Request";
           });
         } else {
-          document.getElementById("banner").textContent = "Please enter Input";
+          alert.textContent = "Please enter Input";
+          alert.style.color = "red"; 
         }
       }
     </script>

@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['error' => 'Method not allowed']);
+    echo json_encode(['error' => 'Only Post Method Allowed!']);
     exit;
 }
 
@@ -12,7 +12,7 @@ $prompt = $input['prompt'];
 if (!empty($prompt) && strlen(trim($prompt)) > 0) {
     $result = checkModel($prompt);
     if (!$result) {
-        echo json_encode(['error' => 'Model check failed']);
+        echo json_encode(['error' => 'Model not available!']);
     }
 } else {
     echo json_encode(['error' => 'Input is required']);
