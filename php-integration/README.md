@@ -171,8 +171,6 @@ This project is open source and available under the [MIT License](LICENSE).
 - [PHP cURL Documentation](https://www.php.net/manual/en/book.curl.php)
 
 ## ✨ Next Steps
-
-Potential improvements for learning:
 <!-- - Add conversation history
 - Implement streaming responses -->
 - Add model selection dropdown
