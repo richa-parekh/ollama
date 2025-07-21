@@ -24,7 +24,7 @@
         <div class="form-field">
           <input
             type="button"
-            value="Request"
+            value="Generate output"
             class="button"
             id="submitBtn"
             onclick="callFunction()"
@@ -61,12 +61,12 @@
           .then((data) => {
             displayResponse(data);
             btn.disabled = false;
-            btn.value = "Request";
+            btn.value = "Generate output";
           })
           .catch((error) => {
             alert.textContent = "Error: " + error.message;
             btn.disabled = false;
-            btn.value = "Request";
+            btn.value = "Generate output";
           });
         } else {
           alert.textContent = "Please enter Input";
