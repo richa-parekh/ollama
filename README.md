@@ -5,4 +5,5 @@ Ollama is a locally deployed AI model runner, designed to allow users to downloa
 This repository is for integrating Olllama with various programming languages, such as Python and PHP. It's for learning purposes.
 
 # Current status
-PHP integration for Ollama is ongoing. Explore it => https://github.com/richa-parekh/ollama/tree/master/php-integration
+PHP integration for Ollama is ongoing. 
+Explore folder => [Ollama with PHP](php-integration/)
