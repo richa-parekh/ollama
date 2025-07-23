@@ -8,7 +8,7 @@
   </head>
   <body>
     <header>
-      <h1>Ollama with PHP</h1>
+      <h1>Ollama PHP Chat</h1>
     </header>
 
     <main>
@@ -38,6 +38,11 @@
     <script>
       function displayResponse(data) {
         document.getElementById("output").innerHTML = data.response || data.error || "No response";
+      }
+
+      function resetScreen() {
+        document.getElementById("output").innerHTML = '';
+        document.getElementById("banner").textContent = '';
       }
 
       function callFunction() {
@@ -73,6 +78,9 @@
           alert.style.color = "red"; 
         }
       }
+
+      var userInput = document.getElementById("input");
+      userInput.addEventListener('keypress', resetScreen); 
     </script>
   </body>
 </html>

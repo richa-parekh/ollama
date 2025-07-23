@@ -1,4 +1,4 @@
-# Ollama PHP Integration
+# Ollama PHP Chat
 
 A simple web interface with a PHP backend and standard JavaScript for interacting with Ollama AI models.
 
