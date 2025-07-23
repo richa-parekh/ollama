@@ -19,7 +19,7 @@ Users can send prompts to Ollama AI models using simple web interface, and they 
 ```
 ├── index.html         # Frontend interface
 ├── api.php            # Backend API endpoint
-├── style.css          # Styling (optional)
+├── style.css          # Styling
 └── README.md          # This file
 ```
 
@@ -30,7 +30,7 @@ Before starting this project, ensure that you have:
 - **PHP** (version 7.4 or higher) is installed
 - **Ollama** is installed and running locally
 - A web server (Apache, Nginx, or PHP built-in server)
-- **llama3.2:1b** model downloaded in Ollama
+- **llama3.2:1b** model downloaded in Ollama or any other model you prefer.
 
 ## 🔧 Installation
 
@@ -148,9 +148,9 @@ $url = "http://your-ollama-host:11434/api/generate";
    ollama pull llama3.2:1b
    ```
 
-3. **"CORS Error"** - Make sure you're accessing via proper web server, not file:// protocol
+3. **"CORS Error"** - Verify that you link using the correct web server and not the file:// protocol.
 
-4. **"PHP Errors"** - Check PHP error logs and ensure cURL is enabled
+4. **"PHP Errors"** - Verify PHP error logs and make sure cURL is turned on.
 
 <!-- ## 🤝 Contributing
 
@@ -171,8 +171,8 @@ This project is open source and available under the [MIT License](LICENSE).
 - [PHP cURL Documentation](https://www.php.net/manual/en/book.curl.php)
 
 ## ✨ Next Steps
-<!-- - Add conversation history
-- Implement streaming responses -->
+<!-- - Add conversation history  -->
+- Implement streaming responses
 - Add model selection dropdown
 - Improve error handling and validation
 <!-- - Add CSS styling and better UI
