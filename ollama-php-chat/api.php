@@ -23,7 +23,7 @@ if (empty($prompt)) {
 
 // Configration
 define('OLLAMA_BASE_URL', 'http://localhost:11434/api');
-define('MODEL_NAME', 'llama3.2:1b');
+define('MODEL_NAME', 'gemma3');
 define('CURL_TIMEOUT', 300); // 5 min
 
 // Main execution
@@ -33,10 +33,13 @@ try {
     }else {
         http_response_code(503);
         echo json_encode(['error' => "Model not available"]);
+        exit;
     }
+   //generateResponse($prompt);
 } catch (Exception $e){
     http_response_code(500);
     echo json_encode(['error' => "Internal Server error: ", $e->getMessage()]);
+    exit;
 }
 
 /* Check if model is available */
@@ -76,6 +79,10 @@ function handleStreamData($curl, $data){
         $response = json_decode($line, true);
         if($response && isset($response['response'])){
             echo $response['response'];
+
+            if(ob_get_level()){
+                ob_flush();
+            }
             flush();
 
             if(isset($response['done']) && $response['done']){
@@ -113,10 +120,12 @@ function callOllamaAPI($url, $postData, $isStream)
 
     if($curlError){
         error_log("CURL Error: ". $curlError);
+        echo json_encode(['error' => 'Connection failed']);
         return false;
     }
     if ($http_code !== 200) {
         error_log("HTTP Error: ". $curlError);
+        echo json_encode(['error' => 'Server error']);
         return false;
     }
 

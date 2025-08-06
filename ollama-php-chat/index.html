@@ -217,36 +217,40 @@
       }
 
       // Handle streaming response
-      function handleStreamingResponse(response) {
+      async function handleStreamingResponse(response) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = '';
 
-        // Show output container
+        // Show output container and hide loading
         outputDiv.classList.add('show');
         outputDiv.textContent = '';
+        hideLoading();
 
-        function readStream() {
-          return reader.read().then(({ done, value }) => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
             if (done) {
-              hideLoading();
               if (!fullResponse.trim()) {
                 showBanner('No response received from the model', 'error');
               }
-              return;
+              break;
             }
 
-            // Decode and display the chunk
+            // Decode the chunk
             const chunk = decoder.decode(value, { stream: true });
+            console.info(chunk);
+            // Add chunk to full response and display immediately
             fullResponse += chunk;
             outputDiv.textContent = fullResponse;
             
-            // Continue reading
-            return readStream();
-          });
+            // Auto-scroll to bottom if content overflows
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+          }
+        } catch (error) {
+          showBanner(`Streaming error: ${error.message}`, 'error');
         }
-
-        return readStream();
       }
 
       // Main function to generate response
@@ -271,34 +275,31 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ prompt: userInput })
-          });
-
+          });console.info("here 1 ");
+          console.info(response);
           // Check if response is ok
           if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-          }
-
-          // Check content type to handle streaming vs JSON
-          const contentType = response.headers.get('content-type');
-          
-          if (contentType && contentType.includes('application/json')) {
-            // Handle JSON response (error case)
-            const data = await response.json();
+            console.info("here 2 ");
             hideLoading();
             
-            if (data.error) {
-              showBanner(data.error, 'error');
-            } else if (data.response) {
-              displayResponse(data.response);
+            // Try to get error message from response
+            try {  console.info("here 3 ");
+            console.info( response.json());
+              const errorData = await response.json();
+              console.info(errorData);
+              showBanner(errorData.error || `Server error: ${response.status}`, 'error');
+            } catch {
+              showBanner(`Server error: ${response.status}`, 'error');
             }
-          } else {
-            // Handle streaming response
-            await handleStreamingResponse(response);
+            return;
           }
+         
+          // Handle streaming response (your PHP sends text/plain)
+          await handleStreamingResponse(response);
 
         } catch (error) {
           hideLoading();
-          showBanner(`Error: ${error.message}`, 'error');
+          showBanner(`Connection error: ${error.message}`, 'error');
           console.error('Error:', error);
         }
       }
