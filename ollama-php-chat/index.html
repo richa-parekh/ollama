@@ -4,83 +4,327 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ollama PHP Chat</title>
-    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Basic styling for better appearance */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        padding: 20px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        color: #333;
+        font-size: 2rem;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+      }
+
+      .form-field {
+        margin-bottom: 20px;
+      }
+
+      #input {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        resize: vertical;
+        font-family: inherit;
+      }
+
+      #input:focus {
+        outline: none;
+        border-color: #4CAF50;
+      }
+
+      .button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      .button:hover:not(:disabled) {
+        background-color: #45a049;
+      }
+
+      .button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      #banner {
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: none;
+      }
+
+      #banner.error {
+        background-color: #ffe6e6;
+        color: #d00;
+        border: 1px solid #ffb3b3;
+        display: block;
+      }
+
+      #banner.success {
+        background-color: #e6ffe6;
+        color: #0a0;
+        border: 1px solid #b3ffb3;
+        display: block;
+      }
+
+      #output {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        min-height: 100px;
+        white-space: pre-wrap;
+        font-family: 'Courier New', monospace;
+        line-height: 1.5;
+        display: none;
+      }
+
+      #output.show {
+        display: block;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .loading.show {
+        display: block;
+      }
+
+      /* Responsive design */
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+        
+        .container {
+          padding: 20px;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
   </head>
   <body>
     <header>
       <h1>Ollama PHP Chat</h1>
     </header>
 
-    <main>
+    <main class="container">
       <div id="banner"></div>
-      <form method="post" class="form-container">
-        <div class="form-filed">
-          <textarea
-            name="input"
-            id="input"
-            placeholder="Ask anything"
-          ></textarea>
-        </div>
-        <div class="form-field">
-          <input
-            type="button"
-            value="Generate output"
-            class="button"
-            id="submitBtn"
-            onclick="callFunction()"
-          />
-        </div>
-        <div id="output"></div>
-      </form>
       
+      <div class="form-field">
+        <textarea
+          id="input"
+          placeholder="Ask me anything... (Press Ctrl+Enter to submit)"
+          rows="5"
+        ></textarea>
+      </div>
+      
+      <div class="form-field">
+        <button type="button" class="button" id="submitBtn">
+          Generate Response
+        </button>
+      </div>
+
+      <div id="loading" class="loading">
+        <p>🤖 Generating response...</p>
+      </div>
+
+      <div id="output"></div>
     </main>
 
     <script>
-      function displayResponse(data) {
-        document.getElementById("output").innerHTML = data.response || data.error || "No response";
+      // Get DOM elements
+      const inputField = document.getElementById('input');
+      const submitBtn = document.getElementById('submitBtn');
+      const outputDiv = document.getElementById('output');
+      const bannerDiv = document.getElementById('banner');
+      const loadingDiv = document.getElementById('loading');
+
+      // Show message in banner
+      function showBanner(message, type = 'error') {
+        bannerDiv.textContent = message;
+        bannerDiv.className = type;
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          hideBanner();
+        }, 5000);
       }
 
-      function resetScreen() {
-        document.getElementById("output").innerHTML = '';
-        document.getElementById("banner").textContent = '';
+      // Hide banner
+      function hideBanner() {
+        bannerDiv.style.display = 'none';
+        bannerDiv.className = '';
       }
 
-      function callFunction() {
-        var userInput = document.getElementById("input").value;
-        var alert = document.getElementById("banner");
-        var btn = document.getElementById("submitBtn");
+      // Show loading state
+      function showLoading() {
+        loadingDiv.classList.add('show');
+        outputDiv.classList.remove('show');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+      }
 
-        if (userInput && userInput.trim().length > 0) {
-          btn.disabled = true;
-          btn.value = "Processing...";
-          
-          fetch("api.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: userInput }),
-          })
-          .then((response) => {
-            if (!response.ok) throw new Error('Network error');
-            return response.json();
-          })
-          .then((data) => {
-            displayResponse(data);
-            btn.disabled = false;
-            btn.value = "Generate output";
-          })
-          .catch((error) => {
-            alert.textContent = "Error: " + error.message;
-            btn.disabled = false;
-            btn.value = "Generate output";
+      // Hide loading state
+      function hideLoading() {
+        loadingDiv.classList.remove('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Generate Response';
+      }
+
+      // Display response
+      function displayResponse(text) {
+        outputDiv.textContent = text;
+        outputDiv.classList.add('show');
+      }
+
+      // Handle streaming response
+      function handleStreamingResponse(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+
+        // Show output container
+        outputDiv.classList.add('show');
+        outputDiv.textContent = '';
+
+        function readStream() {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              hideLoading();
+              if (!fullResponse.trim()) {
+                showBanner('No response received from the model', 'error');
+              }
+              return;
+            }
+
+            // Decode and display the chunk
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            outputDiv.textContent = fullResponse;
+            
+            // Continue reading
+            return readStream();
           });
-        } else {
-          alert.textContent = "Please enter Input";
-          alert.style.color = "red"; 
+        }
+
+        return readStream();
+      }
+
+      // Main function to generate response
+      async function generateResponse() {
+        const userInput = inputField.value.trim();
+
+        // Validate input
+        if (!userInput) {
+          showBanner('Please enter your question or prompt');
+          inputField.focus();
+          return;
+        }
+
+        // Hide previous messages
+        hideBanner();
+        showLoading();
+
+        try {
+          const response = await fetch('api.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: userInput })
+          });
+
+          // Check if response is ok
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+
+          // Check content type to handle streaming vs JSON
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            // Handle JSON response (error case)
+            const data = await response.json();
+            hideLoading();
+            
+            if (data.error) {
+              showBanner(data.error, 'error');
+            } else if (data.response) {
+              displayResponse(data.response);
+            }
+          } else {
+            // Handle streaming response
+            await handleStreamingResponse(response);
+          }
+
+        } catch (error) {
+          hideLoading();
+          showBanner(`Error: ${error.message}`, 'error');
+          console.error('Error:', error);
         }
       }
 
-      var userInput = document.getElementById("input");
-      userInput.addEventListener('keypress', resetScreen); 
+      // Event listeners
+      submitBtn.addEventListener('click', generateResponse);
+
+      // Allow Ctrl+Enter to submit
+      inputField.addEventListener('keydown', (event) => {
+        if (event.ctrlKey && event.key === 'Enter') {
+          event.preventDefault();
+          generateResponse();
+        }
+      });
+
+      // Clear banner when user starts typing
+      inputField.addEventListener('input', () => {
+        if (bannerDiv.style.display !== 'none') {
+          hideBanner();
+        }
+      });
+
+      // Auto-focus on input field when page loads
+      window.addEventListener('load', () => {
+        inputField.focus();
+      });
     </script>
   </body>
 </html>
