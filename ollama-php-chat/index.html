@@ -33,7 +33,7 @@
         margin: 0 auto;
         background: white;
         border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         padding: 30px;
       }
 
@@ -54,11 +54,11 @@
 
       #input:focus {
         outline: none;
-        border-color: #4CAF50;
+        border-color: #4caf50;
       }
 
       .button {
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
         padding: 12px 24px;
         border: none;
@@ -105,7 +105,7 @@
         padding: 20px;
         min-height: 100px;
         white-space: pre-wrap;
-        font-family: 'Courier New', monospace;
+        font-family: "Courier New", monospace;
         line-height: 1.5;
         display: none;
       }
@@ -130,11 +130,11 @@
         body {
           padding: 10px;
         }
-        
+
         .container {
           padding: 20px;
         }
-        
+
         h1 {
           font-size: 1.5rem;
         }
@@ -148,7 +148,7 @@
 
     <main class="container">
       <div id="banner"></div>
-      
+
       <div class="form-field">
         <textarea
           id="input"
@@ -156,7 +156,7 @@
           rows="5"
         ></textarea>
       </div>
-      
+
       <div class="form-field">
         <button type="button" class="button" id="submitBtn">
           Generate Response
@@ -172,84 +172,83 @@
 
     <script>
       // Get DOM elements
-      const inputField = document.getElementById('input');
-      const submitBtn = document.getElementById('submitBtn');
-      const outputDiv = document.getElementById('output');
-      const bannerDiv = document.getElementById('banner');
-      const loadingDiv = document.getElementById('loading');
+      const inputField = document.getElementById("input");
+      const submitBtn = document.getElementById("submitBtn");
+      const outputDiv = document.getElementById("output");
+      const bannerDiv = document.getElementById("banner");
+      const loadingDiv = document.getElementById("loading");
 
       // Show message in banner
-      function showBanner(message, type = 'error') {
+      function showBanner(message, type = "error") {
         bannerDiv.textContent = message;
         bannerDiv.className = type;
-        
+        bannerDiv.style.display = "block";
         // Auto-hide after 5 seconds
-        setTimeout(() => {
+        /* setTimeout(() => {
           hideBanner();
-        }, 5000);
+        }, 5000); */
       }
 
       // Hide banner
       function hideBanner() {
-        bannerDiv.style.display = 'none';
-        bannerDiv.className = '';
+        bannerDiv.style.display = "none";
+        bannerDiv.className = "";
       }
 
       // Show loading state
       function showLoading() {
-        loadingDiv.classList.add('show');
-        outputDiv.classList.remove('show');
+        loadingDiv.classList.add("show");
+        outputDiv.classList.remove("show");
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+        submitBtn.textContent = "Processing...";
       }
 
       // Hide loading state
       function hideLoading() {
-        loadingDiv.classList.remove('show');
+        loadingDiv.classList.remove("show");
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Generate Response';
+        submitBtn.textContent = "Generate Response";
       }
 
       // Display response
       function displayResponse(text) {
         outputDiv.textContent = text;
-        outputDiv.classList.add('show');
+        outputDiv.classList.add("show");
       }
 
       // Handle streaming response
       async function handleStreamingResponse(response) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullResponse = '';
+        let fullResponse = "";
 
         // Show output container and hide loading
-        outputDiv.classList.add('show');
-        outputDiv.textContent = '';
+        outputDiv.classList.add("show");
+        outputDiv.textContent = "";
         hideLoading();
 
         try {
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               if (!fullResponse.trim()) {
-                showBanner('No response received from the model', 'error');
+                showBanner("No response received from the model", "error");
               }
               break;
             }
 
             // Decode the chunk
             const chunk = decoder.decode(value, { stream: true });
-            console.info(chunk);
             // Add chunk to full response and display immediately
             fullResponse += chunk;
             outputDiv.textContent = fullResponse;
-            
+
             // Auto-scroll to bottom if content overflows
             outputDiv.scrollTop = outputDiv.scrollHeight;
           }
         } catch (error) {
-          showBanner(`Streaming error: ${error.message}`, 'error');
+          showBanner(`Streaming error: ${error.message}`, "error");
         }
       }
 
@@ -259,7 +258,7 @@
 
         // Validate input
         if (!userInput) {
-          showBanner('Please enter your question or prompt');
+          showBanner("Please enter your question or prompt");
           inputField.focus();
           return;
         }
@@ -269,61 +268,87 @@
         showLoading();
 
         try {
-          const response = await fetch('api.php', {
-            method: 'POST',
+          const response = await fetch("api.php", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
             },
-            body: JSON.stringify({ prompt: userInput })
-          });console.info("here 1 ");
-          console.info(response);
+            body: JSON.stringify({ prompt: userInput }),
+          });
+
           // Check if response is ok
           if (!response.ok) {
-            console.info("here 2 ");
             hideLoading();
-            
-            // Try to get error message from response
-            try {  console.info("here 3 ");
-            console.info( response.json());
-              const errorData = await response.json();
-              console.info(errorData);
-              showBanner(errorData.error || `Server error: ${response.status}`, 'error');
-            } catch {
-              showBanner(`Server error: ${response.status}`, 'error');
+
+            // Check content type to handle different error formats
+            const contentType = response.headers.get("content-type") || "";
+            console.log("Error response content-type:", contentType);
+
+            if (contentType.includes("application/json")) {
+              // Handle JSON error response
+              try {
+                const errorData = await response.json();
+                console.log("JSON error data:", errorData);
+                showBanner(
+                  errorData.error || `Server error: ${response.status}`,
+                  "error"
+                );
+              } catch (jsonError) {
+                console.error("Failed to parse JSON error:", jsonError);
+                showBanner(`Server error: ${response.status}`, "error");
+              }
+            } else {
+              // Handle text response (might be JSON string)
+              try {
+                const responseText = await response.text();
+                console.log("Text error response:", responseText);
+
+                // Try to parse as JSON
+                const errorData = JSON.parse(responseText);
+                showBanner(
+                  errorData.error || `Server error: ${response.status}`,
+                  "error"
+                );
+              } catch (parseError) {
+                console.error("Not valid JSON, showing as text:", parseError);
+                showBanner(
+                  responseText || `Server error: ${response.status}`,
+                  "error"
+                );
+              }
             }
             return;
           }
-         
-          // Handle streaming response (your PHP sends text/plain)
-          await handleStreamingResponse(response);
 
+          // Handle successful streaming response
+          await handleStreamingResponse(response);
         } catch (error) {
           hideLoading();
-          showBanner(`Connection error: ${error.message}`, 'error');
-          console.error('Error:', error);
+          showBanner(`Connection error: ${error.message}`, "error");
+          console.error("Network error:", error);
         }
       }
 
       // Event listeners
-      submitBtn.addEventListener('click', generateResponse);
+      submitBtn.addEventListener("click", generateResponse);
 
       // Allow Ctrl+Enter to submit
-      inputField.addEventListener('keydown', (event) => {
-        if (event.ctrlKey && event.key === 'Enter') {
+      inputField.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.key === "Enter") {
           event.preventDefault();
           generateResponse();
         }
       });
 
       // Clear banner when user starts typing
-      inputField.addEventListener('input', () => {
-        if (bannerDiv.style.display !== 'none') {
+      inputField.addEventListener("input", () => {
+        if (bannerDiv.style.display !== "none") {
           hideBanner();
         }
       });
 
       // Auto-focus on input field when page loads
-      window.addEventListener('load', () => {
+      window.addEventListener("load", () => {
         inputField.focus();
       });
     </script>

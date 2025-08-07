@@ -1,11 +1,8 @@
 <?php
-// Header for Streaming respons
-header('Content-Type: text/plain'); // For streaming text
-header('Cache-Control: no-cache'); // For not cache data
-header('Connection: keep-alive'); // For keepconnection open
 
 // POST request valodation: Only POST request allowed
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Content-Type: application/json');
     http_response_code(405);
     echo json_encode(['error' => 'Only Post Method Allowed!']);
     exit;
@@ -16,27 +13,35 @@ $input = json_decode(file_get_contents('php://input'), true);
 $prompt = isset($input['prompt']) ? trim($input['prompt']) : '';
 
 if (empty($prompt)) {
+    header('Content-Type: application/json');
     http_response_code(400);
     echo json_encode(['error' => 'Input is required']);
     exit;
 }
 
+// Header for Streaming respons
+header('Content-Type: text/plain'); // For streaming text
+header('Cache-Control: no-cache'); // For not cache data
+header('Connection: keep-alive'); // For keepconnection open
+
 // Configration
 define('OLLAMA_BASE_URL', 'http://localhost:11434/api');
-define('MODEL_NAME', 'gemma3');
+define('MODEL_NAME', 'llama3.2:1b');
 define('CURL_TIMEOUT', 300); // 5 min
 
 // Main execution
 try {
-    if(checkModelAvailability()){
+    if (checkModelAvailability()) {
         generateResponse($prompt);
-    }else {
+    } else {
+        header('Content-Type: application/json');
         http_response_code(503);
         echo json_encode(['error' => "Model not available"]);
         exit;
     }
-   //generateResponse($prompt);
-} catch (Exception $e){
+    //generateResponse($prompt);
+} catch (Exception $e) {
+    header('Content-Type: application/json');
     http_response_code(500);
     echo json_encode(['error' => "Internal Server error: ", $e->getMessage()]);
     exit;
@@ -64,28 +69,30 @@ function generateResponse($prompt)
     $response = callOllamaAPI($url, $postData, true);
 
     if (!$response) {
-       http_response_code(500);
-       echo json_encode(['error' => 'Failed to generate response']);
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to generate response']);
     }
 }
 
 /* Handle streaming data */
-function handleStreamData($curl, $data){
+function handleStreamData($curl, $data)
+{
     $lines = explode("\n", trim($data));
-    foreach($lines as $line){
+    foreach ($lines as $line) {
         $line = trim($line);
-        if(empty($line)) continue;
+        if (empty($line)) continue;
 
         $response = json_decode($line, true);
-        if($response && isset($response['response'])){
+        if ($response && isset($response['response'])) {
             echo $response['response'];
 
-            if(ob_get_level()){
+            if (ob_get_level()) {
                 ob_flush();
             }
             flush();
 
-            if(isset($response['done']) && $response['done']){
+            if (isset($response['done']) && $response['done']) {
                 break;
             }
         }
@@ -97,7 +104,7 @@ function handleStreamData($curl, $data){
 function callOllamaAPI($url, $postData, $isStream)
 {
     $curl = curl_init();
-    
+
     $curlOptions = [
         CURLOPT_URL => $url,
         CURLOPT_POST => true,
@@ -107,8 +114,8 @@ function callOllamaAPI($url, $postData, $isStream)
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_RETURNTRANSFER => !$isStream
     ];
-   
-    if($isStream){
+
+    if ($isStream) {
         $curlOptions[CURLOPT_WRITEFUNCTION] = 'handleStreamData';
     }
 
@@ -118,17 +125,17 @@ function callOllamaAPI($url, $postData, $isStream)
     $curlError = curl_error($curl);
     curl_close($curl);
 
-    if($curlError){
-        error_log("CURL Error: ". $curlError);
-        echo json_encode(['error' => 'Connection failed']);
+    if ($curlError) {
+        error_log("CURL Error: " . $curlError);
+        //echo json_encode(['error' => 'Connection failed']);
         return false;
     }
+
     if ($http_code !== 200) {
-        error_log("HTTP Error: ". $curlError);
-        echo json_encode(['error' => 'Server error']);
+        error_log("HTTP Error: " . $curlError);
+        //echo json_encode(['error' => 'Server error']);
         return false;
     }
 
     return $isStream ? true : $response;
 }
-?>
